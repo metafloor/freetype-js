@@ -1,0 +1,67 @@
+<!doctype html>
+<html><head><title>FreeType test</title>
+<script type="text/javascript" src="freetype.js"></script>
+<style type="text/css">
+</style>
+<script type="text/javascript">
+var get_bitmap = Module.cwrap("get_bitmap", 'number', ['number','number','number']);
+var get_width = Module.cwrap("get_width", 'number', []);
+var get_height = Module.cwrap("get_height", 'number', []);
+var get_pitch = Module.cwrap("get_pitch", 'number', []);
+var get_left = Module.cwrap("get_left", 'number', []);
+var get_top = Module.cwrap("get_top", 'number', []);
+var get_advance = Module.cwrap("get_advance", 'number', []);
+
+function go() {
+	var font = document.getElementById("font").value;
+	var text = document.getElementById("text").value;
+	var size = +document.getElementById("size").value || 10;
+	var cvs  = document.getElementById("canvas");
+        var ctx  = cvs.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, cvs.width, cvs.height);
+        ctx.fillStyle = '#000';
+
+	var f   = font.toLowerCase() == 'ocr-b' ? 1 : 0;
+        var id  = ctx.getImageData(0, 0, cvs.width, cvs.height);
+        var dat = id.data;
+
+	var x = 100;
+	var y = 100;		// baseline
+	for (var n = 0; n < text.length; n++) {
+		var offset = get_bitmap(f, size, text.charCodeAt(n));
+		if (!offset)
+			continue;
+		var width  = get_width();
+		var height = get_height();
+		var width4x = cvs.width * 4;
+
+		var buffer = Module.HEAPU8.subarray(offset, offset + width * height);
+
+		var l = get_left();
+		var t = get_top();
+		for (var i = 0; i < width; i++) {
+			for (var j = 0; j < height; j++) {
+				var val = 255-buffer[j * width + i];
+				dat[(j+y-t)*width4x + (x+l+i)*4]	= val;
+				dat[(j+y-t)*width4x + (x+l+i)*4 + 1]  = val;
+				dat[(j+y-t)*width4x + (x+l+i)*4 + 2]  = val;
+				dat[(j+y-t)*width4x + (x+l+i)*4 + 3]  = 255;
+			}
+		}
+
+		ctx.putImageData(id, 0, 0);
+
+		x += get_advance();
+	}
+}
+</script>
+</head>
+<body>
+<input type="text" style="width:24ex" id="text">
+<input type="text" style="width:4ex" id="size">
+<input type="text" style="width:8ex" id="font" value="OCR-B">
+<button onclick="go()">Render</button><br>
+<canvas width=800 height=400 id="canvas"></canvas>
+</body>
+</html>

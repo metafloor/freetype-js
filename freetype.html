@@ -1,9 +1,24 @@
 <!doctype html>
 <html><head><title>FreeType test</title>
-<script type="text/javascript" src="freetype.js"></script>
-<style type="text/css">
-</style>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
 <script type="text/javascript">
+var Module = {
+	preRun:[ function() {
+		Module.FS_createPreloadedFile("/", "Inconsolata.otf",
+								 "Inconsolata.otf", true, false);
+		Module.FS_createPreloadedFile("/", "Inconsolata-dz.otf",
+								 "Inconsolata-dz.otf", true, false);
+	} ],
+	postRun:[ function() {
+		load_font("Inconsolata.otf", "INCONSOLATA", 106);
+		load_font("Inconsolata-dz.otf", "INCONSOL-DZ", 90);
+	} ]
+};
+</script>
+<script type="text/javascript" src="freetype.js"></script>
+<script type="text/javascript">
+var load_font  = Module.cwrap("load_font", 'number', ['string','string','number']);
+var find_font  = Module.cwrap("find_font", 'number', ['string']);
 var get_bitmap = Module.cwrap("get_bitmap", 'number', ['number','number','number']);
 var get_width = Module.cwrap("get_width", 'number', []);
 var get_height = Module.cwrap("get_height", 'number', []);
@@ -12,47 +27,58 @@ var get_left = Module.cwrap("get_left", 'number', []);
 var get_top = Module.cwrap("get_top", 'number', []);
 var get_advance = Module.cwrap("get_advance", 'number', []);
 
+
 function go() {
-	var font = document.getElementById("font").value;
+
 	var text = document.getElementById("text").value;
 	var size = +document.getElementById("size").value || 10;
 	var cvs  = document.getElementById("canvas");
-        var ctx  = cvs.getContext('2d');
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, cvs.width, cvs.height);
-        ctx.fillStyle = '#000';
+	var ctx  = cvs.getContext('2d');
+	ctx.fillStyle = '#fff';
+	ctx.fillRect(0, 0, cvs.width, cvs.height);
+	ctx.fillStyle = '#000';
 
-	var f   = font.toLowerCase() == 'ocr-b' ? 1 : 0;
-        var id  = ctx.getImageData(0, 0, cvs.width, cvs.height);
-        var dat = id.data;
+	var id  = ctx.getImageData(0, 0, cvs.width, cvs.height);
+	var dat = id.data;
 
-	var x = 100;
-	var y = 100;		// baseline
-	for (var n = 0; n < text.length; n++) {
-		var offset = get_bitmap(f, size, text.charCodeAt(n));
-		if (!offset)
-			continue;
-		var width  = get_width();
-		var height = get_height();
-		var width4x = cvs.width * 4;
+	render(find_font("OCR-A"), 100);
+	render(find_font("OCR-B"), 200);
+	render(find_font("INCONSOLATA"), 300);
+	render(find_font("INCONSOL-DZ"), 400);
 
-		var buffer = Module.HEAPU8.subarray(offset, offset + width * height);
+	ctx.putImageData(id, 0, 0);
+	
+	function render(font, where) {
+		var x = 10;
+		var y = where;		// baseline
+		for (var n = 0; n < text.length; n++) {
+			var offset = get_bitmap(font, size, text.charCodeAt(n));
+			if (!offset)
+				continue;
+			var width  = get_width();
+			var height = get_height();
+			var width4x = cvs.width * 4;
 
-		var l = get_left();
-		var t = get_top();
-		for (var i = 0; i < width; i++) {
-			for (var j = 0; j < height; j++) {
-				var val = 255-buffer[j * width + i];
-				dat[(j+y-t)*width4x + (x+l+i)*4]	= val;
-				dat[(j+y-t)*width4x + (x+l+i)*4 + 1]  = val;
-				dat[(j+y-t)*width4x + (x+l+i)*4 + 2]  = val;
-				dat[(j+y-t)*width4x + (x+l+i)*4 + 3]  = 255;
+			var buff = Module.HEAPU8.subarray(offset, offset + width * height);
+
+			if (n == 0) console.log(text.charAt(n) + ': height=' + height);
+			var l = get_left();
+			var t = get_top();
+			for (var i = 0; i < width; i++) {
+				for (var j = 0; j < height; j++) {
+					var val = 255-buff[j * width + i];
+					if (val == 255)
+						continue;
+					val = Math.min(dat[(j+y-t)*width4x + (x+l+i)*4],val);
+					dat[(j+y-t)*width4x + (x+l+i)*4]	 = val;
+					dat[(j+y-t)*width4x + (x+l+i)*4 + 1] = val;
+					dat[(j+y-t)*width4x + (x+l+i)*4 + 2] = val;
+					dat[(j+y-t)*width4x + (x+l+i)*4 + 3] = 255;
+				}
 			}
+
+			x += get_advance();
 		}
-
-		ctx.putImageData(id, 0, 0);
-
-		x += get_advance();
 	}
 }
 </script>
@@ -60,8 +86,7 @@ function go() {
 <body>
 <input type="text" style="width:24ex" id="text">
 <input type="text" style="width:4ex" id="size">
-<input type="text" style="width:8ex" id="font" value="OCR-B">
 <button onclick="go()">Render</button><br>
-<canvas width=800 height=400 id="canvas"></canvas>
+<canvas width=1000 height=500 id="canvas"></canvas>
 </body>
 </html>

@@ -6,33 +6,64 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#define MAX_FACES	10
+
 static FT_Library	library;
-static FT_Face		faces[10];	// 0 & 1 reserved for OCR-A/B
-static const char*	names[10] = { "OCR-A", "OCR-B" };
-static int			mults[10] = { 90, 90 };
+static FT_Face		faces[MAX_FACES];	// 0 & 1 reserved for OCR-A/B
+static char*		names[MAX_FACES];	// strdup'd in main() for OCR-A/B
+static int			mults[MAX_FACES] = { 90, 90 };	
 static FT_GlyphSlot	slot;
+
 
 // The multiplier allows globally adjusting the font size by mult-%.
 int load_font(const char* path, const char* name, int mult) {
 	FT_Error error;
-	for (int i = 2; i < 10; i++) {
-		if (!names[i]) {
-			error = FT_New_Face(library, path, 0, &faces[i]);
-			if (error) {
-				printf("New_Face(%s,%s) Error! %d\n", path, name, error);
-				return -1;
-			}
-			names[i] = strdup(name);
-			mults[i] = mult;
-			return 0;
+	int i;
+
+	// First look for a font with the same name
+	for (i = 2; i < MAX_FACES; i++) {
+		if (names[i] && strcasecmp(names[i], name) == 0) {
+			FT_Done_Face(faces[i]);
+			free(names[i]);
+			names[i] = 0;
+			faces[i] = 0;
+			break;
 		}
 	}
-	printf("load_font(%s,%s): too many fonts!\n", path, name);
-	return -1;
+	if (i == MAX_FACES) {
+		for (i = 2; i < MAX_FACES && names[i]; i++)
+			;
+	}
+	if (i == MAX_FACES) {
+		printf("load_font(%s,%s): too many fonts!\n", path, name);
+		return -1;
+	}
+
+	error = FT_New_Face(library, path, 0, &faces[i]);
+	if (error) {
+		printf("New_Face(%s,%s) Error! %d\n", path, name, error);
+		return error;
+	}
+	names[i] = strdup(name);
+	mults[i] = mult;
+	return 0;
+}
+
+int close_font(const char* name) {
+	for (int i = 2; i < MAX_FACES; i++) {
+		if (names[i] && strcasecmp(names[i], name) == 0) {
+			FT_Done_Face(faces[i]);
+			free(names[i]);
+			names[i] = 0;
+			faces[i] = 0;
+			break;
+		}
+	}
+	return 0;
 }
 
 int find_font(const char* name) {
-	for (int i = 0; i < 10 && names[i]; i++) {
+	for (int i = 0; i < MAX_FACES && names[i]; i++) {
 		if (strcasecmp(name, names[i]) == 0) {
 			return i;
 		}
@@ -45,7 +76,7 @@ unsigned char* get_bitmap(int font, int size, int ch) {
 	FT_Error	error;
 	FT_Face		face;
 
-	if (font < 0 || font >= 10 || !names[font])
+	if (font < 0 || font >= MAX_FACES || !names[font])
 		font = 1;	// Default OCR-B
 
 	face = faces[font];
@@ -124,6 +155,8 @@ int main() {
 		printf("New_Face(OCR-B) Error! %d\n", error);
 		return 1;
 	}
+	names[0] = strdup("OCR-A");
+	names[1] = strdup("OCR-B");
 	return 0;
 }
 

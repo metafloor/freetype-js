@@ -14,6 +14,30 @@ static char*		names[MAX_FACES];	// strdup'd in main() for OCR-A/B
 static int			mults[MAX_FACES] = { 90, 90 };	
 static FT_GlyphSlot	slot;
 
+static unsigned char*	monomap;		// monochrome bitmap
+static int				monomode;		// monochrome mode
+
+// Unpack a monochrome bitmap into anti-aliased bitmap form
+static int mono_unpack(FT_Bitmap* bitmap) {
+	if (monomap)
+		free(monomap);
+	monomap = (unsigned char*)malloc(bitmap->width * bitmap->rows);
+	if (!monomap)
+		return -1;
+	unsigned char* bytes = monomap;
+	for (int y = 0; y < bitmap->rows; y++) {
+		unsigned char* bits  = &bitmap->buffer[y * bitmap->pitch];
+		for (int x = 0; x < bitmap->width; x++) {
+			*bytes++ = (bits[x >> 3] & (1 << (7 - (x & 07)))) ? 255 : 0;
+		}
+	}
+	return 0;
+}
+
+int monochrome(int enable) {
+	monomode = enable ? 1 : 0;
+	return 0;
+}
 
 // The multiplier allows globally adjusting the font size by mult-%.
 int load_font(const char* path, const char* name, int mult) {
@@ -109,10 +133,19 @@ unsigned char* get_bitmap(int font, int size, int ch) {
 			ch = 0x02c6;
 	}
 
-	error = FT_Load_Char(face, ch, FT_LOAD_RENDER);
+	if (monomode)
+		error = FT_Load_Char(face, ch, FT_LOAD_RENDER | FT_LOAD_TARGET_MONO);
+	else
+		error = FT_Load_Char(face, ch, FT_LOAD_RENDER);
 	if (error) {
 		printf("Load_Char Error! %d\n", error);
 		return 0;
+	}
+
+	if (monomode) {
+		if (mono_unpack(&slot->bitmap) != 0)
+			return 0;
+		return monomap;
 	}
 
 	return slot->bitmap.buffer;

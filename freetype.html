@@ -8,18 +8,18 @@ var Module = {
 								 "Inconsolata.otf", true, false);
 	} ],
 	postRun:[ function() {
-		load_font("Inconsolata.otf", "INCONSOLATA", 106);
+		load_font("Inconsolata.otf", "INCONSOLATA", 108);
 	} ]
 };
 </script>
 <script type="text/javascript" src="freetype.js"></script>
 <script type="text/javascript">
+var monochrome	= Module.cwrap("monochrome", 'number', ['number']);
 var load_font  = Module.cwrap("load_font", 'number', ['string','string','number']);
 var find_font  = Module.cwrap("find_font", 'number', ['string']);
 var get_bitmap = Module.cwrap("get_bitmap", 'number', ['number','number','number']);
 var get_width = Module.cwrap("get_width", 'number', []);
 var get_height = Module.cwrap("get_height", 'number', []);
-var get_pitch = Module.cwrap("get_pitch", 'number', []);
 var get_left = Module.cwrap("get_left", 'number', []);
 var get_top = Module.cwrap("get_top", 'number', []);
 var get_advance = Module.cwrap("get_advance", 'number', []);
@@ -82,7 +82,10 @@ function go() {
 <body>
 <input type="text" style="width:24ex" id="text">
 <input type="text" style="width:4ex" id="size">
-<button onclick="go()">Render</button><br>
+<button onclick="go()">Render</button>
+<label for="fontAnti"><input type="radio" name="font" value="A" id="fontAnti" checked onclick="monochrome(0)">Anti-Aliased</label>
+<label for="fontMono"><input type="radio" name="font" value="M" id="fontMono" onclick="monochrome(1)">Monochrome</label>
+<br>
 <canvas width=1000 height=500 id="canvas"></canvas>
 </body>
 </html>

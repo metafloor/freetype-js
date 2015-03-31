@@ -14,7 +14,7 @@ var Module = {
 </script>
 <script type="text/javascript" src="freetype.js"></script>
 <script type="text/javascript">
-var monochrome	= Module.cwrap("monochrome", 'number', ['number']);
+var monochrome = Module.cwrap("monochrome", 'number', ['number']);
 var load_font  = Module.cwrap("load_font", 'number', ['string','string','number']);
 var find_font  = Module.cwrap("find_font", 'number', ['string']);
 var get_bitmap = Module.cwrap("get_bitmap", 'number', ['number','number','number']);

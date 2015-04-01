@@ -18,15 +18,14 @@ var monochrome = Module.cwrap("monochrome", 'number', ['number']);
 var load_font  = Module.cwrap("load_font", 'number', ['string','string','number']);
 var find_font  = Module.cwrap("find_font", 'number', ['string']);
 var get_bitmap = Module.cwrap("get_bitmap", 'number', ['number','number','number']);
-var get_width = Module.cwrap("get_width", 'number', []);
+var get_width  = Module.cwrap("get_width", 'number', []);
 var get_height = Module.cwrap("get_height", 'number', []);
-var get_left = Module.cwrap("get_left", 'number', []);
-var get_top = Module.cwrap("get_top", 'number', []);
-var get_advance = Module.cwrap("get_advance", 'number', []);
+var get_left   = Module.cwrap("get_left", 'number', []);
+var get_top    = Module.cwrap("get_top", 'number', []);
+var get_advance= Module.cwrap("get_advance", 'number', []);
 
 
 function go() {
-
 	var text = document.getElementById("text").value;
 	var size = +document.getElementById("size").value || 10;
 	var cvs  = document.getElementById("canvas");
@@ -37,6 +36,9 @@ function go() {
 
 	var id  = ctx.getImageData(0, 0, cvs.width, cvs.height);
 	var dat = id.data;
+
+	// Anti-aliased or monochrome fonts?
+	monochrome(document.getElementById('fontAnti').checked ? 0 : 1);
 
 	render(find_font("OCR-A"), 100);
 	render(find_font("OCR-B"), 200);
@@ -80,11 +82,17 @@ function go() {
 </script>
 </head>
 <body>
-<input type="text" style="width:24ex" id="text">
-<input type="text" style="width:4ex" id="size">
-<button onclick="go()">Render</button>
-<label for="fontAnti"><input type="radio" name="font" value="A" id="fontAnti" checked onclick="monochrome(0)">Anti-Aliased</label>
-<label for="fontMono"><input type="radio" name="font" value="M" id="fontMono" onclick="monochrome(1)">Monochrome</label>
+<table border=0>
+<tr><th>Sample Text<th>Size
+<tr><td><input type="text" style="width:24ex" id="text">
+	<td><input type="text" style="width:4ex" id="size">
+	<td>
+		<label for="fontAnti"><input type="radio" name="font" value="A"
+			id="fontAnti" checked>Anti-Aliased</label>
+		<label for="fontMono"><input type="radio" name="font" value="M"
+			id="fontMono">Monochrome</label>
+	<td>&nbsp;<button onclick="go()">Render</button>
+</table>
 <br>
 <canvas width=1000 height=500 id="canvas"></canvas>
 </body>

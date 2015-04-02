@@ -96,27 +96,27 @@ int find_font(const char* name) {
 	return 1;
 }
 
-unsigned char* get_bitmap(int font, int size, int ch) {
+unsigned char* get_bitmap(int font, int ch, int width, int height) {
 	FT_Error	error;
 	FT_Face		face;
 
 	if (font < 0 || font >= MAX_FACES || !names[font])
 		font = 1;	// Default OCR-B
 
-	face = faces[font];
-	size = (size * mults[font] * 64) / 100;
+	face   = faces[font];
+	width  = (width * mults[font] * 64) / 100;
+	height = (height * mults[font] * 64) / 100;
 
-	int height = 0;		// Default the height of the glyph
 	if (face == faces[1]) {
 		// The A - Z characters in OCR-B are rendered a tad short, by design.
 		// But it looks like hell when used in mixed alpha-numeric strings.
 		// Make them the same size as the digits.
 		if (ch >= 'A' && ch <= 'Z')
-			height = (size * 108) / 100;
+			height = (height * 108) / 100;
 	}
 
 	/* 1pt == 1px == 72dpi */
-	error = FT_Set_Char_Size(face, size, height, 72, 0 );
+	error = FT_Set_Char_Size(face, width, height, 72, 0 );
 	if (error) {
 		printf("Set_Char_Size Error! %d\n", error);
 		return 0;

@@ -14,20 +14,22 @@ var Module = {
 </script>
 <script type="text/javascript" src="freetype.js"></script>
 <script type="text/javascript">
-var monochrome = Module.cwrap("monochrome", 'number', ['number']);
+var monochrome	= Module.cwrap("monochrome", 'number', ['number']);
 var load_font  = Module.cwrap("load_font", 'number', ['string','string','number']);
 var find_font  = Module.cwrap("find_font", 'number', ['string']);
-var get_bitmap = Module.cwrap("get_bitmap", 'number', ['number','number','number']);
-var get_width  = Module.cwrap("get_width", 'number', []);
+var get_bitmap = Module.cwrap("get_bitmap", 'number', ['number','number','number','number']);
+var get_width = Module.cwrap("get_width", 'number', []);
 var get_height = Module.cwrap("get_height", 'number', []);
-var get_left   = Module.cwrap("get_left", 'number', []);
-var get_top    = Module.cwrap("get_top", 'number', []);
-var get_advance= Module.cwrap("get_advance", 'number', []);
+var get_left = Module.cwrap("get_left", 'number', []);
+var get_top = Module.cwrap("get_top", 'number', []);
+var get_advance = Module.cwrap("get_advance", 'number', []);
 
 
 function go() {
-	var text = document.getElementById("text").value;
-	var size = +document.getElementById("size").value || 10;
+
+	var text  = document.getElementById("text").value;
+	var sizex = +document.getElementById("sizex").value || 12;
+	var sizey = +document.getElementById("sizey").value || 12;
 	var cvs  = document.getElementById("canvas");
 	var ctx  = cvs.getContext('2d');
 	ctx.fillStyle = '#fff';
@@ -37,7 +39,7 @@ function go() {
 	var id  = ctx.getImageData(0, 0, cvs.width, cvs.height);
 	var dat = id.data;
 
-	// Anti-aliased or monochrome fonts?
+	// Anti-aliased or monochrome?
 	monochrome(document.getElementById('fontAnti').checked ? 0 : 1);
 
 	render(find_font("OCR-A"), 100);
@@ -50,7 +52,7 @@ function go() {
 		var x = 10;
 		var y = where;		// baseline
 		for (var n = 0; n < text.length; n++) {
-			var offset = get_bitmap(font, size, text.charCodeAt(n));
+			var offset = get_bitmap(font, text.charCodeAt(n), sizex, sizey);
 			if (!offset)
 				continue;
 			var width  = get_width();
@@ -83,15 +85,15 @@ function go() {
 </head>
 <body>
 <table border=0>
-<tr><th>Sample Text<th>Size
+<tr><th>Sample Text<th>Width<th>Height
 <tr><td><input type="text" style="width:24ex" id="text">
-	<td><input type="text" style="width:4ex" id="size">
-	<td>
-		<label for="fontAnti"><input type="radio" name="font" value="A"
+	<td><input type="text" style="width:6ex" id="sizex" value="16">
+	<td><input type="text" style="width:6ex" id="sizey" value="16">
+	<td><button onclick="go()">Render</button>
+	<td><label for="fontAnti"><input type="radio" name="font" value="A"
 			id="fontAnti" checked>Anti-Aliased</label>
 		<label for="fontMono"><input type="radio" name="font" value="M"
 			id="fontMono">Monochrome</label>
-	<td>&nbsp;<button onclick="go()">Render</button>
 </table>
 <br>
 <canvas width=1000 height=500 id="canvas"></canvas>
